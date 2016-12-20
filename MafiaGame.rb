@@ -90,5 +90,16 @@ class MafiaGame
         #   Last wills, suspicions, typing patterns, previous game data, etc.
         #   But this is all too advanced for now.
         
+        total_probability_sum = cumulative_probability_backtrack()
+        total_probability_sum /= possibilities
+        return total_probability_sum
+    end
+
+    def cumulative_probability_bracktrack(rem, old_base_list)
+        if (rem == 1)
+
+        else
+
+        end
     end
 end

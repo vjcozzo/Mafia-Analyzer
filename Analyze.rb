@@ -1,7 +1,11 @@
 require_relative "MafiaGame.rb"
 
 class Interface
-    @currentGame
+
+    def initialize()
+        @currentGame = nil
+    end
+
     def start()
         print ("$ ")
         command = gets.chomp
@@ -16,7 +20,6 @@ class Interface
             command = gets.chomp()
             command = command.split(/\s+/)
         end
-#        puts "Program terminated."
         return 0
     end
 
@@ -28,18 +31,45 @@ class Interface
         elsif (first_token.eql?("help"))
             help(cmd)
         elsif (first_token.eql?("claim"))
-            puts "Executing claim command..."
-            result = @currentGame.addClaim(cmd)
-            if (result == (-1))
-                puts "Note: the claim has been replaced."
-            else
-                puts "Claim set successful"
+            if (@currentGame)
+                result = @currentGame.addClaim(cmd)
+                if (result == (-1))
+                    puts "Note: the claim has been replaced."
+                else
+                    puts "Claim set successful"
+                end
             end
         elsif (first_token.eql?("show"))
-            puts "show command identified..."
-            puts "case still in progress. Many cases need to be addressed :P"
+            puts "\'show\' still in development. Many cases need to be addressed :P"
+            if (cmd[0].eql?("rolelist"))
+                if (@currentGame)
+                    @currentGame.printRoleList()
+                end
+            elsif (cmd[0].eql?("updatedrolelist"))
+                if (@currentGame)
+                    @currentGame.printUpToDate()
+                end
+            elsif (cmd[0].eql?("likelihood"))
+                args = cmd.shift()
+                if (@currentGame)
+                    @currentGame.likelihood()
+                end
+            elsif (cmd[0].eql?("lifetime"))
+
+            elsif (cmd[0].eql?("help"))
+
+            else
+
+            end
         elsif (first_token.eql?("confirm"))
-            puts "confirm command identified..."
+            if (@currentGame)
+                result = @currentGame.confirm(cmd)
+                if (result == (-1))
+                    puts "ERR: confirm was not valid!"
+                else
+                    puts "Role confirmed successfully."
+                end
+            end
         else
             puts "Command not identified. Enter \'help (cmd)\' for an up-to-date command list."
         end
@@ -47,6 +77,7 @@ class Interface
     end
 
     def process_new()
+        @currentGame = MafiaGame.new()
         print ("  >> ")
         command = gets.chomp
         command = command.split(/\s+/)
@@ -60,10 +91,11 @@ class Interface
             command = gets.chomp()
             command = command.split(/\s+/)
         end
-        if (! (@currentGame.ready))
+        if (! (@currentGame.ready()))
             puts "Err -- no save has been successfully set! Try again please."
-            process_new()
+            return -1
         end
+        return 0
     end
 
     def processSaveCMD(save_cmd)
@@ -79,7 +111,7 @@ class Interface
                 puts "\tthe name of the save to be loaded."
                 return 1
             end
-            loadSave(save_cmd)
+            loadSave(save_cmd[0].to_s())
         else
             puts "Command not identified. Enter \'help\' for an up-to-date command list."
         end
@@ -94,6 +126,9 @@ class Interface
         }
     end
 
+    # Precondition: @currentGame has been set / is not nil
+    # Postcondition: loads / uses a particular save 
+    #    by reading data from conf files
     def loadSave(userinput)
         f = open("conf/" + userinput + ".conf")
         defsfile = open("conf/" + userinput + "-def.conf")
@@ -120,7 +155,7 @@ class Interface
         data = []
         (0...numRoles).each { |i|
             nextEntry = []
-            nextEntry.push( lines[i])
+            nextEntry.push(lines[i])
             nextEntry.push(defeinitions[line[i]])
             data.push(nextEntry)
         }
