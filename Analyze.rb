@@ -1,9 +1,25 @@
 require_relative "MafiaGame.rb"
 
+# A class to manage the interface between the user/client
+# (presumably a Mafia player)
+# and the MafiaGame object (currentGame), which computes probabilities
+# and keeps track of data like role list.
 class Interface
 
+    # Initialize the currentGame to the nil object;
+    # Read abbreviation data (which shouldn't change from game to game).
+    # This data will be useful for the interface.
     def initialize()
         @currentGame = nil
+        roleAbbreviationFile = open("conf/role-const.conf")
+        allAbbreviations = roleAbbreviationFile.read()
+        abbrevArr = allAbbreviations.split("\n")
+        @roleAbbrevHash = {}
+        abbrevArr.each { |n|
+            abbrev = n.split("=>")
+            @roleAbbrevHash[abbrev[0]] = abbrev[1]
+        }
+        roleAbbreviationFile.close()
     end
 
     def start()
@@ -32,11 +48,15 @@ class Interface
             help(cmd)
         elsif (first_token.eql?("claim"))
             if (@currentGame)
-                result = @currentGame.addClaim(cmd)
+                fullRole = cmd[1].downcase()
+                if (@roleAbbrevHash[fullRole])
+                    fullRole = @roleAbbrevHash[fullRole]
+                end
+                result = @currentGame.addClaim(cmd[0], fullRole)
                 if (result == (-1))
                     puts "Note: the claim has been replaced."
                 else
-                    puts "Claim set successful"
+                    puts "Claim set successfully."
                 end
             end
         elsif (first_token.eql?("show"))
@@ -52,14 +72,14 @@ class Interface
             elsif (cmd[0].eql?("likelihood"))
                 args = cmd.shift()
                 if (@currentGame)
-                    @currentGame.likelihood()
+                    @currentGame.show_likelihood(args[0], args[1])
                 end
             elsif (cmd[0].eql?("lifetime"))
-
+                
             elsif (cmd[0].eql?("help"))
-
+                
             else
-
+                
             end
         elsif (first_token.eql?("confirm"))
             if (@currentGame)
@@ -100,7 +120,6 @@ class Interface
 
     def processSaveCMD(save_cmd)
         first_token = save_cmd.shift()
-#        puts "Now about to process the first token, #{first_token}"
         if (first_token.eql?("list"))
             listSaves()
         elsif (first_token.eql?("use"))
@@ -119,7 +138,7 @@ class Interface
     end
 
     def listSaves()
-        Dir.foreach("conf/") { |name|
+        Dir.foreach("saves/") { |name|
             if (name[-5,5].eql?(".conf"))
                 puts name
             end
@@ -130,8 +149,8 @@ class Interface
     # Postcondition: loads / uses a particular save 
     #    by reading data from conf files
     def loadSave(userinput)
-        f = open("conf/" + userinput + ".conf")
-        defsfile = open("conf/" + userinput + "-def.conf")
+        f = open("saves/" + userinput + ".conf")
+        defsfile = open("saves/" + userinput + "-def.conf")
         roleList = f.read()
         roleDefs = defsfile.read()
 
@@ -155,8 +174,8 @@ class Interface
         data = []
         (0...numRoles).each { |i|
             nextEntry = []
-            nextEntry.push(lines[i])
-            nextEntry.push(defeinitions[line[i]])
+            nextEntry.push(lines[i].to_sym())
+            nextEntry.push(definitions[line[i]])
             data.push(nextEntry)
         }
         @currentGame.loadSave(numRoles, lines, data)
@@ -192,7 +211,5 @@ class Interface
                 puts "Command not identified."
             end
         end
-
     end
-
 end

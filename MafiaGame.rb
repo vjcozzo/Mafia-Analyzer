@@ -83,23 +83,63 @@ class MafiaGame
             end
         }
         # Step 2: cycle through each possibility, and, for each one,
-        #   compute the probability that player number X has role Y
-        #   (in this 0.1 version model, it will be very simplistic
-        #   and assume that each unconfirmed player has equal chance of having Y role).d
-        #   In the future, it might incorporate other player's claims,
-        #   Last wills, suspicions, typing patterns, previous game data, etc.
-        #   But this is all too advanced for now.
+        #   execute the following list of instructions:
+        #   a) check if this role list is even valid, given the ambiguous deceased roles
+        #
+        #   b) if this role list is invalid, return 0.00 additional probability.
+        #      otherwise: 
+        #
+        #   c) compute the probability that player number X has role Y
+        #       (in this ver 0.1 model, it will be very simplistic
+        #      and assume that each unconfirmed player has equal chance of having Y role).
+        #      In the future, it might incorporate other player's claims,
+        #      Last wills, suspicions, typing patterns, previous game data, etc.
+        #      But this is all too advanced for now.
         
         total_probability_sum = cumulative_probability_backtrack()
         total_probability_sum /= possibilities
         return total_probability_sum
     end
 
-    def cumulative_probability_bracktrack(rem, old_base_list)
-        if (rem == 1)
-
+    def cumulative_probability_bracktrack(rem, old_base_list, numX, roleY)
+        if (rem == 0) # if we start at a rem=0 base case, array manipulations can use rem
+            nextArray = oldBaseList
+            if (@updatedRoleList[rem].empty?)
+                nextArray[rem] = @updatedRoleList[rem][0]
+            else
+                @updatedRoleList[rem][1].each { |nextChoice|
+                    nextArray[rem] = nextChoice
+                    getPrXHasY(nextArray, numX, roleY)
+                }
+            end
         else
 
+            nextArray = oldBaseList
+            if (@updatedRoleList[rem].empty?)
+                nextArray[rem] = @updatedRoleList[rem][0]
+            else
+                innerSum = 0.00
+                @updatedRoleList[rem][1].each { |nextChoice|
+                    # choose the next value from @updatedRoleList[rem][1]...
+                    nextArray[rem] = nextChoice
+                    # and then use it recursively.
+                    innerSum += cumulative_probability_backtrack(rem-1, nextArray, numX, roleY)
+                }
+                return innerSum
+            end
+
         end
+    end
+
+    def printRoleList()
+        @roleList.each { |a|
+            puts (a.to_s())
+        }
+    end
+
+    def printUpToDate()
+        @updatedRoleList.each { |en|
+            puts (en.to_s())
+        }
     end
 end
