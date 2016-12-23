@@ -13,7 +13,8 @@ Many other developments are drafted / in progress. In some future advanced versi
 ## Directory Structure (Tentative)
 *   tmp/ - stores info about the current game in progress
 *   lifetime/ - stored lifetime statistical data
-*   conf/ - stores all data pertaining to a "save" (basic definitions and templates for a game of Mafia)
+*   saves/ - stores all data pertaining to a "save" (basic definitions and templates for a game of Mafia)
+*   conf/ - stores game constants, such as common abbreviations
 *   archive/ - stores previous game data, kept as a backup
 
 ## Execution
@@ -25,7 +26,7 @@ $ (chmod +x init.rb)
 $ ./init.rb
 
 ## Influences
-At a very basic level, the design of this project (having an interpreter written in ruby) was inspired in part by a school project adapted from [Mr. Conrad's FTPD server](https://www.github.com/wconrad/ftpd). (The objectives and content of the Mafia Analysis project is clearly very different, but I cite this project as an albeit weak design inspiration.)
+At an extremely basic level, the design of this project (having an interpreter written in ruby) was inspired in part by a school project adapted from [Mr. Conrad's FTPD server](https://www.github.com/wconrad/ftpd). (The objectives and content of the Mafia Analysis project are clearly very different, but I cite this project as an albeit weak design inspiration.)
 
 ## Future additions
 *   Allowing the user to enter common abbreviations in setting the role claim (doc = Doctor) or save tempate (town prot = TownProtective).
