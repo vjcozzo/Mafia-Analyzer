@@ -33,38 +33,47 @@ class MafiaGame
     end
 
     def addClaim(num, mesg)
-        if (@claims[Num])
-            @claims[Num] = Mesg
+        if (@claims[num-1])
+            @claims[num-1] = mesg.to_sym()
             return -1
         else
-            @Claims[Num] = Mesg
+            @claims[num-1] = mesg.to_sym()
             return 0
         end
     end
 
     def confirm(num, givenRole, d)
         if (d)
-            @graveyard[num] = givenRole.to_sym
+            @graveyard[num-1] = givenRole.to_sym
         end
-        n = @roleList.length()
 
+        lastMatchInd = 0
         matches = 1
-        (0...n).times { |index|
+        (0...(@size)).each { |index|
             nextRolePossibilities = @updatedRoleList[index][1]
-            if (@definitions[nextRolePossibilities.contains(givenRole.to_sym())])
+            nextMatch = false
+            if (nextRolePossibilities)
+                nextRolePossibilities.each { |nth|
+                    if (nth == (givenRole.to_sym()))
+                        nextMatch = true
+                    end
+                }
+            end
+            if (nextMatch)
                 matches += 1
                 lastMatchInd = index
             end
         }
-        if (matchess == 1)
-            @updatedRoleList[lastMatchInd][1].clear()
-            @updatedRoleList[lastMatchInd][1].push(givenRole.to_sym())
+        if (matches == 1)
+            @updatedRoleList[lastMatchInd][1] = []
+            @updatedRoleList[lastMatchInd][0] = givenRole.to_sym()
         end
+        @confirmed[num-1] = givenRole.to_sym()
     end
 
-    def show_likelihood(number, roleAsString)
-        if (confirmedRoles[number])
-            if (confirmedRoles[number].to_s().eql?(roleAsString))
+    def showLikelihood(number, roleAsString)
+        if (@confirmed[number-1])
+            if (@confirmed[number-1].to_s().eql?(roleAsString))
                 return 1.00
             else
                 return 0.00
@@ -78,10 +87,11 @@ class MafiaGame
         #   possible role combinations
         possibilities = 1
         (0...@size).each { |index|
-            unless (updatedRoleList[index].empty?)
-                possibilities *= updatedRoleList[index].length()
+            unless (@updatedRoleList[index].empty?)
+                possibilities *= @updatedRoleList[index].length()
             end
         }
+        puts "Possible role lists given this save template: ~ #{possibilities}"
         # Step 2: cycle through each possibility, and, for each one,
         #   execute the following list of instructions:
         #   a) check if this role list is even valid, given the ambiguous deceased roles
@@ -95,28 +105,34 @@ class MafiaGame
         #      In the future, it might incorporate other player's claims,
         #      Last wills, suspicions, typing patterns, previous game data, etc.
         #      But this is all too advanced for now.
-        
-        total_probability_sum = cumulative_probability_backtrack()
+        total_probability_sum =
+            cumulative_probability_backtrack(@size-1, [], number, roleAsString)
+        puts "Total probability sum, before modding by the number of possibilities ~ #{total_probability_sum.round(9)}"
         total_probability_sum /= possibilities
+        puts "Percentage likelihood: #{100.0*(total_probability_sum.round(10))}"
         return total_probability_sum
     end
 
-    def cumulative_probability_bracktrack(rem, old_base_list, numX, roleY)
+    def cumulative_probability_backtrack(rem, oldBaseList, numX, roleY)
         if (rem == 0) # if we start at a rem=0 base case, array manipulations can use rem
             nextArray = oldBaseList
-            if (@updatedRoleList[rem].empty?)
+            if (@updatedRoleList[rem][1].nil?)
                 nextArray[rem] = @updatedRoleList[rem][0]
+                return getPrXHasY(nextArray, numX, roleY)
             else
+                sum = 0.00
                 @updatedRoleList[rem][1].each { |nextChoice|
                     nextArray[rem] = nextChoice
-                    getPrXHasY(nextArray, numX, roleY)
+                    sum += getPrXHasY(nextArray, numX, roleY)
                 }
+                retur sum
             end
         else
 
             nextArray = oldBaseList
-            if (@updatedRoleList[rem].empty?)
+            if (@updatedRoleList[rem][1].nil?)
                 nextArray[rem] = @updatedRoleList[rem][0]
+                return cumulative_probability_backtrack(rem-1, nextArray, numX, roleY)
             else
                 innerSum = 0.00
                 @updatedRoleList[rem][1].each { |nextChoice|
@@ -131,6 +147,18 @@ class MafiaGame
         end
     end
 
+    def getPrXHasY(roleArray, numX, roleY)
+        # For now, a very simplitic calculation is done.
+        # (Again, in future versions, many other factors could be taken into account).
+        sum = 0.00
+        roleArray.each { |b|
+            if (b == roleY)
+                sum += 1.00
+            end
+        }
+        return (sum / @size)
+    end
+
     def printRoleList()
         @roleList.each { |a|
             puts (a.to_s())
@@ -140,6 +168,38 @@ class MafiaGame
     def printUpToDate()
         @updatedRoleList.each { |en|
             puts (en.to_s())
+        }
+    end
+
+    def showClaims()
+        (0...(@size)).each { |ind|
+            entry = @claims[ind]
+            if (entry)
+                puts "#{ind+1}: #{entry}"
+            else
+                puts "#{ind+1}: -------"
+            end
+        }
+    end
+
+    def showConfirmed()
+        (0...(@size)).each { |ind|
+            entry = @confirmed[ind]
+            if (entry)
+                puts "#{ind+1}: #{entry}"
+            else
+                puts "#{ind+1}: -------"
+            end
+        }
+    end
+
+    def showGraveyard()
+        puts @graveyard
+        (0...(@graveyard.size)).each { |ind|
+            entry = @graveyard[ind]
+            if (entry)
+                puts "#{ind+1}: #{entry}"
+            end
         }
     end
 end

@@ -14,6 +14,7 @@ class Interface
         roleAbbreviationFile = open("conf/role-const.conf")
         allAbbreviations = roleAbbreviationFile.read()
         abbrevArr = allAbbreviations.split("\n")
+        @definitions = {}
         @roleAbbrevHash = {}
         abbrevArr.each { |n|
             abbrev = n.split("=>")
@@ -48,11 +49,12 @@ class Interface
             help(cmd)
         elsif (first_token.eql?("claim"))
             if (@currentGame)
-                fullRole = cmd[1].downcase()
-                if (@roleAbbrevHash[fullRole])
+                fullRole = cmd[1]
+                lowerCase = cmd[1].downcase()
+                if (@roleAbbrevHash[lowerCase])
                     fullRole = @roleAbbrevHash[fullRole]
                 end
-                result = @currentGame.addClaim(cmd[0], fullRole)
+                result = @currentGame.addClaim(cmd[0].to_i(), fullRole)
                 if (result == (-1))
                     puts "Note: the claim has been replaced."
                 else
@@ -72,18 +74,43 @@ class Interface
             elsif (cmd[0].eql?("likelihood"))
                 args = cmd.shift()
                 if (@currentGame)
-                    @currentGame.show_likelihood(args[0], args[1])
+                    @currentGame.showLikelihood(args[0].to_i(), args[1].to_sym())
+                end
+            elsif ((cmd[0].eql?("claims")) || (cmd[0].eql?("claim")))
+                if (@currentGame)
+                    @currentGame.showClaims()
+                end
+            elsif (cmd[0].eql?("confirmed"))
+                if (@currentGame)
+                    @currentGame.showConfirmed()
+                end
+            elsif (cmd[0].eql?("graveyard"))
+                if (@currentGame)
+                    @currentGame.showGraveyard()
                 end
             elsif (cmd[0].eql?("lifetime"))
-                
+                puts "Case in development..."               
             elsif (cmd[0].eql?("help"))
-                
+                discard = cmd.shift()
+                help(cmd)
             else
-                
+                puts "\'show\' command not recognized."
             end
         elsif (first_token.eql?("confirm"))
             if (@currentGame)
-                result = @currentGame.confirm(cmd)
+                fullRole = cmd[1]
+                lowerCase = cmd[1].downcase()
+                if (@roleAbbrevHash[lowerCase])
+                    fullRole = @roleAbbrevHash[fullRole]
+                end
+
+                # If this role is a deceased role...
+                if (cmd[2])
+                    # Then pass true as the third argument, signaling this case.
+                    result = @currentGame.confirm(cmd[0].to_i(), fullRole, true)
+                else
+                    result = @currentGame.confirm(cmd[0].to_i(), fullRole, false)
+                end
                 if (result == (-1))
                     puts "ERR: confirm was not valid!"
                 else
@@ -101,15 +128,17 @@ class Interface
         print ("  >> ")
         command = gets.chomp
         command = command.split(/\s+/)
-        while (command.empty? || (! command[0].eql?("done")))
+        result = 0
+        while ((result != 2) && (command.empty? || (! command[0].eql?("done"))))
             if (! (command.empty?))
-                processSaveCMD(command)
+                result = processSaveCMD(command)
             end
-
-            # Output the prompt again
-            print ("  >> ")
-            command = gets.chomp()
-            command = command.split(/\s+/)
+            unless (result == 2)
+                # Output the prompt again
+                print ("  >> ")
+                command = gets.chomp()
+                command = command.split(/\s+/)
+            end
         end
         if (! (@currentGame.ready()))
             puts "Err -- no save has been successfully set! Try again please."
@@ -128,9 +157,10 @@ class Interface
             if (save_cmd.empty? || (save_cmd.length() > 1))
                 puts "Error -- load command should take one and only one argument,"
                 puts "\tthe name of the save to be loaded."
-                return 1
+                return -1
             end
             loadSave(save_cmd[0].to_s())
+            return 2
         else
             puts "Command not identified. Enter \'help\' for an up-to-date command list."
         end
@@ -150,41 +180,42 @@ class Interface
     #    by reading data from conf files
     def loadSave(userinput)
         f = open("saves/" + userinput + ".conf")
-        defsfile = open("saves/" + userinput + "-def.conf")
-        roleList = f.read()
-        roleDefs = defsfile.read()
+        alltext = f.read()
 
         # First, get role definitions from the def.conf file.
+        defsFile = open("saves/" + userinput + "-def.conf")
+        roleDefs = defsFile.read()
         definitionFileLines = roleDefs.split("\n")
         # Possible future step: allow comments in the def file
         # by eliminating all lines beginning with #
         definitionFileLines.each { |nextLine|
             nextLineSeparated = nextLine.split("=>")
             targetRolesStrings = nextLineSeparated[1].split(",")
-            targetRolesSymbols = targetRolesString.map { |str| str.to_sym() }
+            targetRolesSymbols = targetRolesStrings.map { |str| str.to_sym() }
             nextGeneralRole = nextLineSeparated[0].to_sym()
-            definitions[nextGeneralRole] = targetRolesSymbols
+            @definitions[nextGeneralRole] = targetRolesSymbols
         }
 
         # Then read from the primary role list file,
         # and use the definitions to frame the initial
         # dynamic-role-list structure
         lines = alltext.split("\n")
-        numRoles = lines.shift()
+        numRoles = lines.shift().to_i()
         data = []
         (0...numRoles).each { |i|
             nextEntry = []
             nextEntry.push(lines[i].to_sym())
-            nextEntry.push(definitions[line[i]])
+            nextEntry.push(@definitions[lines[i].to_sym()])
             data.push(nextEntry)
         }
-        @currentGame.loadSave(numRoles, lines, data)
+        @currentGame.importSave(numRoles, lines, data)
         f.close()
-        fdefs.close()
+        defsFile.close()
     end
 
     def help(arg)
         if (arg.empty?)
+            puts  "\n"
             puts "\tconfirm"
             puts "\t\tUpdated the game database with a new confirmed role"
             puts "\t\t-d\tupdates graveyard along with the confirmed role list"
@@ -193,9 +224,11 @@ class Interface
             puts "\tsave\n\t\tDefines/Loads data for a Mafia save"
             puts "\t\t(role list and definitions used for a particular game)"
             puts "\tshow"
+            puts "\t\trolelist\tprints the current save/rolelist"
+            puts "\t\tupdatedrolelist\tprints the updated understanding of the save (factors in confirmed roles)"
             puts "\t\t-c [#]\tshows the claim someone's made"
             puts "\t\t-l [ROLE]\tshows the statistical likelihood of a role"
-            puts  "\n\n"
+            puts  "\n"
         else
             if (arg[0].eql?("show"))
                 puts "\tshow"
