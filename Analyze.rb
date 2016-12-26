@@ -74,7 +74,8 @@ class Interface
             elsif (cmd[0].eql?("likelihood"))
                 args = cmd.shift()
                 if (@currentGame)
-                    @currentGame.showLikelihood(args[0].to_i(), args[1].to_sym())
+                    puts "Analuzer.rb --- args read as #{cmd[0]} #{cmd[1]}"
+                    @currentGame.showLikelihood(cmd[0].to_i(), cmd[1])
                 end
             elsif ((cmd[0].eql?("claims")) || (cmd[0].eql?("claim")))
                 if (@currentGame)

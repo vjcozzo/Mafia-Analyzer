@@ -13,6 +13,7 @@ class MafiaGame
         @confirmed = []
 #        @definitions = {}
         @size = 0
+        @@iterations = 0
     end
 
     # Important step: set the updated roles list
@@ -87,8 +88,8 @@ class MafiaGame
         #   possible role combinations
         possibilities = 1
         (0...@size).each { |index|
-            unless (@updatedRoleList[index].empty?)
-                possibilities *= @updatedRoleList[index].length()
+            unless (@updatedRoleList[index][1].nil?)
+                possibilities *= @updatedRoleList[index][1].length()
             end
         }
         puts "Possible role lists given this save template: ~ #{possibilities}"
@@ -109,26 +110,35 @@ class MafiaGame
             cumulative_probability_backtrack(@size-1, [], number, roleAsString)
         puts "Total probability sum, before modding by the number of possibilities ~ #{total_probability_sum.round(9)}"
         total_probability_sum /= possibilities
+        puts "#{@@iterations} iterations done in the cycling/backtracking function"
         puts "Percentage likelihood: #{100.0*(total_probability_sum.round(10))}"
         return total_probability_sum
     end
 
+    # I realize that cycling through each of these possible save configurations
+    #   is very time-intensive...
+    #   but in a future version, I'll be analyzing each case individually,
+    #   to find contradicting claims etc.
     def cumulative_probability_backtrack(rem, oldBaseList, numX, roleY)
         if (rem == 0) # if we start at a rem=0 base case, array manipulations can use rem
             nextArray = oldBaseList
             if (@updatedRoleList[rem][1].nil?)
                 nextArray[rem] = @updatedRoleList[rem][0]
-                return getPrXHasY(nextArray, numX, roleY)
+                nextPr = getPrXHasY(nextArray, numX, roleY)
+#                puts "\tBASE CASE --- rem = 0. Array in development is #{nextArray.inspect}, prob returned=#{nextPr}"
+                return nextPr
             else
                 sum = 0.00
                 @updatedRoleList[rem][1].each { |nextChoice|
                     nextArray[rem] = nextChoice
-                    sum += getPrXHasY(nextArray, numX, roleY)
+                    nextPr = getPrXHasY(nextArray, numX, roleY)
+#                    puts "\tBASE CASE --- rem = 0. Array in development is #{nextArray.inspect}, prob returned=#{nextPr}"
+                    sum += nextPr
                 }
-                retur sum
+                return sum
             end
         else
-
+#            puts "\trem (#{rem}) > 0 --- Array in dev in #{oldBaseList.inspect}"
             nextArray = oldBaseList
             if (@updatedRoleList[rem][1].nil?)
                 nextArray[rem] = @updatedRoleList[rem][0]
@@ -147,12 +157,15 @@ class MafiaGame
         end
     end
 
+    # For now, this is a very simplistic implementation.
+    # In future versions, this calculation should involve role claims and LWs.
     def getPrXHasY(roleArray, numX, roleY)
         # For now, a very simplitic calculation is done.
         # (Again, in future versions, many other factors could be taken into account).
+        @@iterations += 1
         sum = 0.00
         roleArray.each { |b|
-            if (b == roleY)
+            if (b.to_s().eql?(roleY))
                 sum += 1.00
             end
         }
