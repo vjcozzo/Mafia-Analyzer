@@ -1,8 +1,6 @@
 Save0 - Mostly ordinary 9-3-3 save template.
 SAVE0-def.conf contains the raw, basic save configuration, with no modifications!
 
-Saves for 14 players will start at the 800s (e.g. Save800, Save801, Save802, etc.)
-
 Save801 - for 14 players, but otherwise an ordinary balanced save
 *   Neutral Evil - excludes killing and excludes Judge
 *   Town Random - excludes killing & government
@@ -10,11 +8,14 @@ Save801 - for 14 players, but otherwise an ordinary balanced save
 
 Save2 - 
 
-
 Save3 - for 15 players, even more standard. It's the standard 9-3-3 save.
 *   Neutral Evil - excludes killing
 *   Town Random - excludes government
 *   Town Govt - excludes Mason, Mason Ldr.
 
+Save8XX - for 14 players, rather than 15. Otherwise an ordinary balanced save.
 
+Save9XX - for Cultist saves
+
+Save10XX - for testing purposes (but if one of these saves shows up, PM me!)
 

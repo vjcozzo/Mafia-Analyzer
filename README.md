@@ -6,7 +6,7 @@ Among the fundamental functionalities are:
 *   show statistics on games played, e.g.:
   * what is the most common claim, for guilty players?
   * how frequently do players lie? (Is it as frequently as one would expect, proportional to the ratio of mafia roles to all roles?)  
-...(This could be used in order to determine what claims are most common, and which are most successful.)...  
+  (This could be used in order to determine what claims are most common, and which are most successful.)  
 
 Many other developments are drafted / in progress. In some future advanced version, this may become an artificial intelligence that plays the game Mafia (but this is of course a long-term dream for now).
 

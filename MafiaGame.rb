@@ -10,8 +10,7 @@ class MafiaGame
         @updatedRoleList = [] # changes during course of game.
         @graveyard = [] # Array storing each player's role, or nil if unknown.
         @claims = []
-        @confirmed = []
-#        @definitions = {}
+        @confirmed = [] #        @definitions = {}
         @size = 0
         @@iterations = 0
     end
@@ -45,7 +44,8 @@ class MafiaGame
 
     def confirm(num, givenRole, d)
         if (d)
-            @graveyard[num-1] = givenRole.to_sym
+            @graveyard[num-1] = []
+            @graveyard[num-1].push(givenRole.to_sym())
         end
 
         lastMatchInd = 0
@@ -68,6 +68,7 @@ class MafiaGame
         if (matches == 1)
             @updatedRoleList[lastMatchInd][1] = []
             @updatedRoleList[lastMatchInd][0] = givenRole.to_sym()
+            @graveyard[num-1].push(lastMatchInd)
         end
         @confirmed[num-1] = givenRole.to_sym()
     end
@@ -86,10 +87,34 @@ class MafiaGame
 
         # Step 1: Find the total number of (distinct)
         #   possible role combinations
+        # To be more efficient, only the role slots that contain 
+        # this given role as a possibility are counted.
+        relevantSlots = []
         possibilities = 1
+        numDistinctSlots = 0
         (0...@size).each { |index|
-            unless (@updatedRoleList[index][1].nil?)
-                possibilities *= @updatedRoleList[index][1].length()
+            if (@updatedRoleList[index][1].nil?)
+                # check if updated list[0] matches the claim; if so,
+                # then we DO in fact want to include it in the list of
+                # relevantSlots.
+                if ((@updatedRoleList[index][0].eql?(roleAsString.to_sym())))
+                    relevantSlots.push()
+                    numDistinctSlots += 1
+		end
+	    else
+                # otherwise: for every vague save slot,
+                # check if it CAN be the suggested / claimed role:
+                counted = false
+                @updatedRoleList[index][1].each { |nextRoleSymbol|
+                    if (roleAsString.to_sym() == nextRoleSymbol)
+                        counted = true
+                    end
+                }
+                if (counted)
+                    possibilities *= @updatedRoleList[index][1].length()
+                    relevantSlots.push(@updatedRoleList[index][0])
+                    numDistinctSlots += 1
+                end
             end
         }
         puts "Possible role lists given this save template: ~ #{possibilities}"
@@ -106,6 +131,19 @@ class MafiaGame
         #      In the future, it might incorporate other player's claims,
         #      Last wills, suspicions, typing patterns, previous game data, etc.
         #      But this is all too advanced for now.
+
+        # First - show basic data about this role claim:
+        # how many people have it confirmed, how many people have claimed it, and
+        # how many people in total can have the role.
+	count = 0
+        @confirmed.each { |a|
+            if (a.eql?(roleAsString))
+	        count += 1
+            end
+        }
+	puts "Out of #{numDistinctSlots} save slots that can be #{roleAsString}, #{count} have been confirmed so far"
+	puts "This leaves exactly #{numDistinctSlots - count} slots remaining..."
+        
         total_probability_sum =
             cumulative_probability_backtrack(@size-1, [], number, roleAsString)
         puts "Total probability sum, before modding by the number of possibilities ~ #{total_probability_sum.round(9)}"
@@ -162,6 +200,9 @@ class MafiaGame
     def getPrXHasY(roleArray, numX, roleY)
         # For now, a very simplitic calculation is done.
         # (Again, in future versions, many other factors could be taken into account).
+
+        # In fact, the first step is to traverse the graveyard,
+        # and we should see how many matches there are...
         @@iterations += 1
         sum = 0.00
         roleArray.each { |b|
